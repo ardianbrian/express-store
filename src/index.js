@@ -5,7 +5,9 @@ dotenv.config();
 import cookieParser from "cookie-parser";
 import morgan from "morgan";
 import helmet from "helmet";
+//
 import connectDB from "./config/connectDB.js";
+import userRoutes from "./routes/user.route.js";
 
 const app = express();
 app.use(
@@ -24,11 +26,22 @@ app.use(
   })
 );
 
+// PORT
 const PORT = 8080 || process.env.PORT;
 
 app.get("/", (req, res) => {
   res.json({
     message: "Server is running " + PORT,
+  });
+});
+
+app.use("/api/users", userRoutes);
+
+// Menangani route yang tidak ditemukan
+app.use((req, res) => {
+  res.status(404).json({
+    msg: "Route not found",
+    error: true,
   });
 });
 
