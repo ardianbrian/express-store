@@ -1,6 +1,10 @@
 import bcrypt from "bcryptjs";
+import dotenv from "dotenv";
+dotenv.config();
 //
 import UserModel from "../models/user.model.js";
+import sendEmail from "../utils/sendEmail.js";
+import verifyEmailTemplate from "../utils/verifyEmailTemplate.js";
 
 const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
@@ -49,7 +53,7 @@ export async function registerUserController(req, res) {
       });
     }
 
-    const user = await UserModel.findOne({ email });
+    const user = await UserModel.findOne({ email }).lean();
     if (user) {
       return res.status(400).json({
         msg: "User already registered",
@@ -66,6 +70,26 @@ export async function registerUserController(req, res) {
       email,
       password: hashedPassword,
     });
+
+    const verifyEmailUrl = `${process.env.FRONTEND_URL}/verify-email?code=${newUser._id}`;
+
+    try {
+      await sendEmail({
+        sendTo: email,
+        subject: "Verify email from Ardian",
+        html: verifyEmailTemplate({
+          name,
+          url: verifyEmailUrl,
+        }),
+      });
+    } catch (err) {
+      console.error("Failed to send verification email", err);
+      return res.status(500).json({
+        msg: "Failed to send verification email",
+        error: true,
+        success: false,
+      });
+    }
 
     return res.status(201).json({
       msg: "User registered successfully",
